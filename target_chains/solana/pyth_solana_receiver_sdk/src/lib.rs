@@ -14,6 +14,8 @@ pub mod error;
 pub mod pda;
 pub mod price_update;
 pub mod program;
+#[cfg(feature = "idl-build")]
+mod idl_build;
 
 declare_id!("rec5EKMGg6MxZYaMdyBfgwp4d5rB9T1VQH5pJv5LtFJ");
 

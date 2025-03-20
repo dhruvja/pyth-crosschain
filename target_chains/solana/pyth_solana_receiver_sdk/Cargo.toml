@@ -11,6 +11,8 @@ edition = "2021"
 crate-type = ["lib"]
 name = "pyth_solana_receiver_sdk"
 
+[features]
+idl-build = ["anchor-lang/idl-build"]
 
 [dependencies]
 anchor-lang = ">=0.28.0"
