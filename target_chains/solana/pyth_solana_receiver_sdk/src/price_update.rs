@@ -4,6 +4,10 @@ use {
     anchor_lang::prelude::{borsh::BorshSchema, *},
     solana_program::pubkey::Pubkey,
 };
+use core::ops::{Deref, DerefMut};
+
+// Define LocalFeedId as a type alias for [u8; 32]
+pub type LocalFeedId = [u8; 32];
 
 /// Pyth price updates are bridged to all blockchains via Wormhole.
 /// Using the price updates on another chain requires verifying the signatures of the Wormhole guardians.
@@ -94,7 +98,7 @@ impl TwapUpdate {
     /// as it allows for the possibility of using unverified, outdated, or arbitrary window length twap updates.
     pub fn get_twap_unchecked(
         &self,
-        feed_id: &FeedId,
+        feed_id: &LocalFeedId,
     ) -> std::result::Result<TwapPrice, GetPriceError> {
         check!(
             self.twap.feed_id == *feed_id,
@@ -134,7 +138,7 @@ impl TwapUpdate {
         clock: &Clock,
         maximum_age: u64,
         window_seconds: u64,
-        feed_id: &FeedId,
+        feed_id: &LocalFeedId,
     ) -> std::result::Result<TwapPrice, GetPriceError> {
         // Ensure the update isn't outdated
         let twap_price = self.get_twap_unchecked(feed_id)?;
@@ -160,7 +164,7 @@ impl TwapUpdate {
 /// This type is used to persist the calculated TWAP in TwapUpdate accounts on Solana.
 #[derive(AnchorSerialize, AnchorDeserialize, Copy, Clone, PartialEq, BorshSchema, Debug)]
 pub struct TwapPrice {
-    pub feed_id: FeedId,
+    pub feed_id: LocalFeedId,
     pub start_time: i64,
     pub end_time: i64,
     pub price: i64,
@@ -192,7 +196,7 @@ impl PriceUpdateV2 {
     /// It is therefore unsafe to use this function without any extra checks, as it allows for the possibility of using unverified or outdated price updates.
     pub fn get_price_unchecked(
         &self,
-        feed_id: &FeedId,
+        feed_id: &LocalFeedId,
     ) -> std::result::Result<Price, GetPriceError> {
         check!(
             self.price_message.feed_id == *feed_id,
@@ -236,7 +240,7 @@ impl PriceUpdateV2 {
         &self,
         clock: &Clock,
         maximum_age: u64,
-        feed_id: &FeedId,
+        feed_id: &LocalFeedId,
         verification_level: VerificationLevel,
     ) -> std::result::Result<Price, GetPriceError> {
         check!(
@@ -280,7 +284,7 @@ impl PriceUpdateV2 {
         &self,
         clock: &Clock,
         maximum_age: u64,
-        feed_id: &FeedId,
+        feed_id: &LocalFeedId,
     ) -> std::result::Result<Price, GetPriceError> {
         self.get_price_no_older_than_with_custom_verification_level(
             clock,
@@ -302,8 +306,8 @@ impl PriceUpdateV2 {
 /// use pyth_solana_receiver_sdk::price_update::get_feed_id_from_hex;
 /// let feed_id = get_feed_id_from_hex("0xef0d8b6fda2ceba41da15d4095d1da392a0d2f8ed0c6c7bc0f4cfac8c280b56d").unwrap();
 /// ```
-pub fn get_feed_id_from_hex(input: &str) -> std::result::Result<FeedId, GetPriceError> {
-    let mut feed_id: FeedId = [0; 32];
+pub fn get_feed_id_from_hex(input: &str) -> std::result::Result<LocalFeedId, GetPriceError> {
+    let mut feed_id: LocalFeedId = [0; 32];
     match input.len() {
         66 => feed_id.copy_from_slice(
             &hex::decode(&input[2..]).map_err(|_| GetPriceError::FeedIdNonHexCharacter)?,
